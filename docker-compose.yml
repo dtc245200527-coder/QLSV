@@ -100,12 +100,137 @@ services:
           cpus: '0.30'
           memory: 128M
 
+  # ================= MONITORING STACK (COMMIT 2) =================
+
+  # 5. cAdvisor: Thu thập chỉ số Docker containers (CPU, RAM, Network)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: sms-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring-net
+      - frontend-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.40'
+          memory: 256M
+
+  # 6. Nginx Prometheus Exporter: Lấy chỉ số Web server
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.1.0
+    container_name: sms-nginx-exporter
+    restart: unless-stopped
+    command:
+      - -nginx.scrape-uri=http://nginx:80/stub_status
+    depends_on:
+      - nginx
+    networks:
+      - monitoring-net
+      - frontend-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 64M
+
+  # 7. MySQL Exporter: Thu thập chỉ số CSDL MySQL
+  mysql-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: sms-mysql-exporter
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/my.cnf:/.my.cnf:ro
+    command:
+      - '--config.my-cnf=/.my.cnf'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+      - backend-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 64M
+
+  # 8. Prometheus: Thu thập và lưu trữ Metrics
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: sms-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - cadvisor
+      - nginx-exporter
+      - mysql-exporter
+    networks:
+      - monitoring-net
+      - frontend-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+  # 9. Grafana: Hiển thị Dashboard biểu đồ giám sát
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: sms-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-net
+      - frontend-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
 volumes:
   mysql_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:
   frontend-net:
     driver: bridge
   backend-net:
+    driver: bridge
+  monitoring-net:
     driver: bridge
