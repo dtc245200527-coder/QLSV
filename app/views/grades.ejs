@@ -1,0 +1,108 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1"><i class="fa-solid fa-award text-primary me-2"></i>Bảng Điểm Sinh Viên</h3>
+    <p class="text-muted mb-0">Quản lý kết quả học tập các môn học (Chuyên cần 10%, Giữa kỳ 30%, Cuối kỳ 60%)</p>
+  </div>
+  <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addGradeModal">
+    <i class="fa-solid fa-plus me-1"></i> Nhập Điểm Mới
+  </button>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Mã SV</th>
+          <th>Họ và Tên</th>
+          <th>Lớp</th>
+          <th>Tên Môn Học</th>
+          <th>Chuyên cần (10%)</th>
+          <th>Giữa kỳ (30%)</th>
+          <th>Cuối kỳ (60%)</th>
+          <th>Tổng kết</th>
+          <th class="text-end">Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (grades.length === 0) { %>
+          <tr><td colspan="9" class="text-center py-4 text-muted">Chưa có bản ghi điểm nào.</td></tr>
+        <% } %>
+        <% grades.forEach(gr => { %>
+          <tr>
+            <td class="fw-bold text-primary"><%= gr.student_code %></td>
+            <td class="fw-semibold"><%= gr.full_name %></td>
+            <td><span class="badge badge-class"><%= gr.class_name || 'N/A' %></span></td>
+            <td><%= gr.subject_name %></td>
+            <td><%= gr.attendance_score %></td>
+            <td><%= gr.midterm_score %></td>
+            <td><%= gr.final_score %></td>
+            <td>
+              <span class="badge <%= gr.total_score >= 8.5 ? 'bg-success' : (gr.total_score >= 5.0 ? 'bg-primary' : 'bg-danger') %> fs-6">
+                <%= gr.total_score %>
+              </span>
+            </td>
+            <td class="text-end">
+              <form action="/grades/delete/<%= gr.id %>" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa điểm môn này?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="fa-solid fa-trash"></i> Xóa
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Add Grade -->
+<div class="modal fade" id="addGradeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="/grades/add" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus text-primary me-2"></i>Nhập Điểm Sinh Viên</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Chọn Sinh Viên</label>
+            <select name="student_id" class="form-select" required>
+              <option value="">-- Chọn sinh viên --</option>
+              <% students.forEach(st => { %>
+                <option value="<%= st.id %>"><%= st.student_code %> - <%= st.full_name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tên Môn Học</label>
+            <input type="text" name="subject_name" class="form-control" placeholder="VD: Triển khai và Quản trị HTPM" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Chuyên cần (10%)</label>
+              <input type="number" step="0.1" min="0" max="10" name="attendance_score" class="form-control" value="10" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Giữa kỳ (30%)</label>
+              <input type="number" step="0.1" min="0" max="10" name="midterm_score" class="form-control" value="8.0" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Cuối kỳ (60%)</label>
+              <input type="number" step="0.1" min="0" max="10" name="final_score" class="form-control" value="8.5" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i> Lưu Điểm Số</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

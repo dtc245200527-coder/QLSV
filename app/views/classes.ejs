@@ -1,0 +1,87 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1"><i class="fa-solid fa-chalkboard-user text-primary me-2"></i>Danh Sách Lớp Học</h3>
+    <p class="text-muted mb-0">Quản lý các lớp niên chế và chuyên ngành</p>
+  </div>
+  <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addClassModal">
+    <i class="fa-solid fa-plus me-1"></i> Thêm Lớp Mới
+  </button>
+</div>
+
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mã Lớp</th>
+              <th>Tên Lớp</th>
+              <th>Khoa / Ngành</th>
+              <th>Số lượng sinh viên</th>
+              <th class="text-end">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (classes.length === 0) { %>
+              <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có lớp học nào.</td></tr>
+            <% } %>
+            <% classes.forEach(cl => { %>
+              <tr>
+                <td>#<%= cl.id %></td>
+                <td><span class="badge badge-class fs-6"><%= cl.class_code %></span></td>
+                <td class="fw-semibold"><%= cl.class_name %></td>
+                <td><%= cl.faculty %></td>
+                <td><span class="badge bg-secondary"><%= cl.student_count || 0 %> sinh viên</span></td>
+                <td class="text-end">
+                  <form action="/classes/delete/<%= cl.id %>" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa lớp <%= cl.class_name %>?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="fa-solid fa-trash"></i> Xóa
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Add Class -->
+<div class="modal fade" id="addClassModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="/classes/add" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus text-primary me-2"></i>Thêm Lớp Học Mới</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mã Lớp</label>
+            <input type="text" name="class_code" class="form-control" placeholder="VD: D23CQCN03" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tên Lớp</label>
+            <input type="text" name="class_name" class="form-control" placeholder="VD: Công nghệ thông tin 03" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Khoa / Viện quản lý</label>
+            <input type="text" name="faculty" class="form-control" placeholder="VD: Khoa Công nghệ Thông tin" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i> Lưu Lớp Học</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

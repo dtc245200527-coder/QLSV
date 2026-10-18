@@ -1,0 +1,17 @@
+# Environment variables
+.env
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# Database data volume files (nếu có mount local)
+mysql_data/
+
+# OS and IDE files
+.DS_Store
+.idea/
+.vscode/

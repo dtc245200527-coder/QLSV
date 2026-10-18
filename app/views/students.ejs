@@ -1,0 +1,174 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1"><i class="fa-solid fa-user-graduate text-primary me-2"></i>Danh Sách Sinh Viên</h3>
+    <p class="text-muted mb-0">Quản lý hồ sơ, lớp học và thông tin liên hệ của sinh viên</p>
+  </div>
+  <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+    <i class="fa-solid fa-plus me-1"></i> Thêm Sinh Viên Mới
+  </button>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Mã SV</th>
+          <th>Họ và Tên</th>
+          <th>Giới tính</th>
+          <th>Ngày sinh</th>
+          <th>Lớp học</th>
+          <th>Email</th>
+          <th>Số điện thoại</th>
+          <th class="text-end">Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (students.length === 0) { %>
+          <tr><td colspan="8" class="text-center py-4 text-muted">Chưa có dữ liệu sinh viên nào.</td></tr>
+        <% } %>
+        <% students.forEach(st => { %>
+          <tr>
+            <td class="fw-bold text-primary"><%= st.student_code %></td>
+            <td class="fw-semibold"><%= st.full_name %></td>
+            <td><span class="badge <%= st.gender === 'Nam' ? 'bg-info text-dark' : 'bg-warning text-dark' %>"><%= st.gender %></span></td>
+            <td><%= new Date(st.dob).toLocaleDateString('vi-VN') %></td>
+            <td><span class="badge badge-class"><%= st.class_name || 'Chưa xếp lớp' %></span></td>
+            <td><%= st.email %></td>
+            <td><%= st.phone || '---' %></td>
+            <td class="text-end">
+              <!-- Edit Button -->
+              <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editModal<%= st.id %>">
+                <i class="fa-solid fa-pen-to-square"></i> Sửa
+              </button>
+              <!-- Delete Button -->
+              <form action="/students/delete/<%= st.id %>" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sinh viên [<%= st.student_code %>] <%= st.full_name %>?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="fa-solid fa-trash"></i> Xóa
+                </button>
+              </form>
+            </td>
+          </tr>
+
+          <!-- Modal Edit Student -->
+          <div class="modal fade" id="editModal<%= st.id %>" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form action="/students/edit/<%= st.id %>" method="POST">
+                  <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Sửa Sinh Viên: <%= st.student_code %></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label">Họ và tên</label>
+                      <input type="text" name="full_name" class="form-control" value="<%= st.full_name %>" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Giới tính</label>
+                        <select name="gender" class="form-select">
+                          <option value="Nam" <%= st.gender === 'Nam' ? 'selected' : '' %>>Nam</option>
+                          <option value="Nữ" <%= st.gender === 'Nữ' ? 'selected' : '' %>>Nữ</option>
+                          <option value="Khác" <%= st.gender === 'Khác' ? 'selected' : '' %>>Khác</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Ngày sinh</label>
+                        <input type="date" name="dob" class="form-control" value="<%= new Date(st.dob).toISOString().split('T')[0] %>" required>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Lớp học</label>
+                      <select name="class_id" class="form-select">
+                        <option value="">-- Chưa xếp lớp --</option>
+                        <% classes.forEach(cl => { %>
+                          <option value="<%= cl.id %>" <%= st.class_id === cl.id ? 'selected' : '' %>><%= cl.class_name %> (<%= cl.class_code %>)</option>
+                        <% }) %>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Email</label>
+                      <input type="email" name="email" class="form-control" value="<%= st.email %>" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Số điện thoại</label>
+                      <input type="text" name="phone" class="form-control" value="<%= st.phone %>">
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Add Student -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="/students/add" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus text-primary me-2"></i>Thêm Sinh Viên Mới</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mã Sinh Viên</label>
+            <input type="text" name="student_code" class="form-control" placeholder="VD: B23DCCN123" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Họ và Tên</label>
+            <input type="text" name="full_name" class="form-control" placeholder="VD: Nguyễn Văn Nam" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Giới tính</label>
+              <select name="gender" class="form-select">
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Ngày sinh</label>
+              <input type="date" name="dob" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Lớp học</label>
+            <select name="class_id" class="form-select">
+              <option value="">-- Chọn lớp học --</option>
+              <% classes.forEach(cl => { %>
+                <option value="<%= cl.id %>"><%= cl.class_name %> (<%= cl.class_code %>)</option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email sinh viên</label>
+            <input type="email" name="email" class="form-control" placeholder="VD: nam.nv@ptit.edu.vn" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Số điện thoại</label>
+            <input type="text" name="phone" class="form-control" placeholder="VD: 0912345678">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i> Xác Nhận Thêm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>
