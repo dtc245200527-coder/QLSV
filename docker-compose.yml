@@ -1,30 +1,24 @@
 services:
-  # 1. Cơ sở dữ liệu MySQL 8.0
-  mysql:
-    image: mysql:8.0
-    container_name: sms-mysql
+  # 1. Reverse Proxy Nginx (SSL/HTTPS + Security Headers)
+  nginx:
+    image: nginx:alpine
+    container_name: sms-nginx
     restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
     networks:
-      - backend-net
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - frontend-net
     deploy:
       resources:
         limits:
-          cpus: '0.80'
-          memory: 512M
+          cpus: '0.40'
+          memory: 128M
 
   # 2. Ứng dụng Web Quản lý Sinh viên (Node.js/Express)
   app:
@@ -56,7 +50,34 @@ services:
           cpus: '0.50'
           memory: 256M
 
-  # 3. Công cụ quản trị CSDL phpMyAdmin
+  # 3. Cơ sở dữ liệu MySQL 8.0
+  mysql:
+    image: mysql:8.0
+    container_name: sms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.80'
+          memory: 512M
+
+  # 4. Công cụ quản trị CSDL phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: sms-phpmyadmin
