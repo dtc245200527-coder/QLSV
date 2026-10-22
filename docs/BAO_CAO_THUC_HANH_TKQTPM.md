@@ -7,7 +7,7 @@
 
 * **Cơ sở đào tạo**: Trường Đại học Công nghệ Thông tin và Truyền thông – Đại học Thái Nguyên (ICTU)
 * **Khoa**: Công nghệ Thông tin
-* **Sinh viên thực hiện**: `dtc245200527-coder`
+* **Sinh viên thực hiện**: **Đỗ Ngọc Anh**
 * **Mã số sinh viên (MSSV)**: `DTC245200527`
 * **Email sinh viên**: `dtc245200527@ictu.edu.vn`
 * **Kho lưu trữ GitHub (Repository)**: [https://github.com/dtc245200527-coder/QLSV](https://github.com/dtc245200527-coder/QLSV)
@@ -74,13 +74,40 @@ Toàn bộ hệ thống được module hóa thành **11 dịch vụ micro-conta
         └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### 1.3. Bảng quy hoạch chi tiết các cổng và dịch vụ hệ thống (Port Mapping)
+Hệ thống phân định rành mạch giữa các cổng công khai tiếp nhận lưu lượng từ người dùng/quản trị viên (Host Ports) và các cổng dịch vụ nội bộ được cô lập hoàn toàn giữa các container theo nguyên tắc phòng thủ đa lớp (Defense in Depth):
+
+#### Bảng các cổng công khai mở ra ngoài Host:
+| STT | Tên Dịch Vụ (Container) | Cổng Host | Giao thức | Địa chỉ truy cập | Chức năng và Mục đích sử dụng |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| **1** | **Nginx Reverse Proxy** (`sms-nginx`) | **`443`** | HTTPS | [https://localhost](https://localhost) | Cổng bảo mật chính (Gateway), SSL/TLS tự ký, 5 Security Headers, reverse proxy vào Web App |
+| **2** | **Nginx Reverse Proxy** (`sms-nginx`) | **`80`** | HTTP | [http://localhost](http://localhost) | Cổng tiếp nhận HTTP, tự động chuyển hướng an toàn (HTTP 301 Redirect) sang HTTPS cổng 443 |
+| **3** | **Ứng dụng Web Quản lý SV** (`sms-app`) | **`3000`** | HTTP | [http://localhost:3000](http://localhost:3000) | Cổng Node.js Express trực tiếp (phục vụ kiểm thử và làm Upstream cho Nginx) |
+| **4** | **Quản trị CSDL phpMyAdmin** (`sms-phpmyadmin`) | **`8080`** | HTTP | [http://localhost:8080](http://localhost:8080) | Giao diện đồ họa web quản trị CSDL MySQL (`student_user` / `SecurePass_2026@TKQTPM!`) |
+| **5** | **Grafana Dashboard** (`sms-grafana`) | **`3001`** | HTTP | [http://localhost:3001](http://localhost:3001) | Bảng điều khiển giám sát tài nguyên CPU/RAM hệ thống và phân tích log tập trung (Loki LogQL) |
+| **6** | **Prometheus Server** (`sms-prometheus`) | **`9090`** | HTTP | [http://localhost:9090](http://localhost:9090) | Máy chủ thu thập, lưu trữ Time-Series Metrics và quản lý các targets (`/targets`) |
+| **7** | **Grafana Loki API** (`sms-loki`) | **`3100`** | HTTP | [http://localhost:3100](http://localhost:3100) | API máy chủ tiếp nhận, đánh chỉ mục và lưu trữ Log tập trung từ Promtail |
+| **8** | **Healthcheck Web App** (`sms-app`) | **`3000`** | HTTP | [http://localhost:3000/health](http://localhost:3000/health) | API JSON kiểm tra trạng thái hoạt động (Liveness / Readiness) của dịch vụ Web |
+| **9** | **Metrics Web App** (`sms-app`) | **`3000`** | HTTP | [http://localhost:3000/metrics](http://localhost:3000/metrics) | Prometheus Scrape Target cung cấp chỉ số HTTP traffic đo lường nội bộ ứng dụng |
+
+#### Bảng các cổng dịch vụ nội bộ (Network Isolation - Hardening):
+| STT | Tên Dịch Vụ (Container) | Cổng Container | Mạng nội bộ | Cơ chế bảo vệ và Phân vùng an ninh |
+| :---: | :--- | :---: | :--- | :--- |
+| **1** | **MySQL Database 8.0** (`sms-mysql`) | `3306` | `backend-net` | **Hardening:** Cổng 3306 hoàn toàn không mở ra Host, chỉ cho phép container `app` và `phpmyadmin` truy cập nội bộ. |
+| **2** | **cAdvisor** (`sms-cadvisor`) | `8080` | `monitoring-net` | Xuất thông số tài nguyên CPU, RAM, Network của 11 container cho Prometheus (`http://cadvisor:8080/metrics`). |
+| **3** | **Nginx Exporter** (`sms-nginx-exporter`) | `9113` | `monitoring-net` | Đọc chỉ số stub_status từ Nginx và xuất metrics cho Prometheus (`http://nginx-exporter:9113/metrics`). |
+| **4** | **MySQL Exporter** (`sms-mysql-exporter`) | `9104` | `backend-net`, `monitoring-net` | Thu thập chỉ số hiệu năng truy vấn CSDL cho Prometheus (`http://mysql-exporter:9104/metrics`). |
+| **5** | **Promtail Log Shipper** (`sms-promtail`) | `9080` | `logging-net` | Daemon đọc luồng log container qua `/var/run/docker.sock` và chuyển tiếp đến Loki qua cổng `3100`. |
+
 ---
 
 ## CHƯƠNG 2: QUẢN LÝ MÃ NGUỒN VÀ QUY TRÌNH COMMIT GITHUB
 
 ### 2.1. Cấu hình định danh sinh viên
 Đảm bảo định danh sinh viên được thiết lập chính xác trên Git local theo yêu cầu của giảng viên:
-- **Tên người dùng Git**: `dtc245200527-coder`
+- **Sinh viên thực hiện**: **Đỗ Ngọc Anh**
+- **Mã số sinh viên (MSSV)**: `DTC245200527`
+- **Tên người dùng Git (Username)**: `dtc245200527-coder`
 - **Email sinh viên**: `dtc245200527@ictu.edu.vn`
 - **Địa chỉ kho mã nguồn**: `https://github.com/dtc245200527-coder/QLSV.git`
 
@@ -273,7 +300,7 @@ Tuyệt đối không hardcode mật khẩu trong mã nguồn hay Dockerfile. T�
 
 | STT | Tiêu chí đánh giá của Giảng viên | Điểm tối đa | Kết quả đạt được trong đề tài |
 | :---: | :--- | :---: | :--- |
-| **1** | **Quản lý mã nguồn trên GitHub** | **1.5** | Đầy đủ mã nguồn, đúng định danh `dtc245200527-coder`, đủ 3 mốc commit có ý nghĩa, có README chuẩn chỉ. |
+| **1** | **Quản lý mã nguồn trên GitHub** | **1.5** | Đầy đủ mã nguồn, đúng định danh sinh viên Đỗ Ngọc Anh (`dtc245200527-coder`), đủ 3 mốc commit có ý nghĩa, có README chuẩn chỉ. |
 | **2** | **Triển khai ứng dụng + Database** | **1.5** | CRUD Sinh viên, Lớp, Điểm chạy mượt mà, MySQL có dữ liệu mẫu, phpMyAdmin hoạt động ổn định. |
 | **3** | **Nginx Reverse Proxy** | **1.5** | Cấu hình SSL/HTTPS tự ký, tự động chuyển hướng HTTP->HTTPS 301, bộ 5 Security Headers chuẩn CIS. |
 | **4** | **Giám sát Prometheus + Grafana** | **1.5** | Prometheus quét 5 targets (cAdvisor, MySQL, Nginx, App, Server). Grafana có Dashboard biểu đồ chi tiết. |
@@ -292,4 +319,4 @@ Tuyệt đối không hardcode mật khẩu trong mã nguồn hay Dockerfile. T�
 
 ---
 **NGƯỜI LẬP BÁO CÁO**  
-*Sinh viên: `dtc245200527-coder` (DTC245200527)*
+*Sinh viên: **Đỗ Ngọc Anh** (MSSV: DTC245200527 - GitHub: `dtc245200527-coder`)*

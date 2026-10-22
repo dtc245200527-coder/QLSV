@@ -14,7 +14,7 @@ full_html = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>Báo cáo Bài tập lớn - TKQTHPTM - DTC245200527</title>
+<title>Báo cáo Bài tập lớn - TKQTHPTM - Đỗ Ngọc Anh (DTC245200527)</title>
 <style>
   @page {{
     size: A4;

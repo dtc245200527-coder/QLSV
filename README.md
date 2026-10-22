@@ -1,6 +1,6 @@
 # ĐỀ TÀI 02: HỆ THỐNG QUẢN LÝ SINH VIÊN (SMS)
 > **Môn học**: Triển khai và Quản trị Hệ thống Phần mềm (TKQT HTPM K23)  
-> **Sinh viên thực hiện**: `dtc245200527-coder`  
+> **Sinh viên thực hiện**: **Đỗ Ngọc Anh**  
 > **Mã số sinh viên**: `DTC245200527`  
 > **Email**: `dtc245200527@ictu.edu.vn`  
 > **Repository GitHub**: [https://github.com/dtc245200527-coder/QLSV](https://github.com/dtc245200527-coder/QLSV)
@@ -49,14 +49,31 @@ Dự án triển khai website **Hệ thống Quản lý Sinh viên** phục vụ
 
 ---
 
-## 🌐 3. Danh sách các Cổng và Dịch vụ
+## 🌐 3. Danh sách các Cổng và Dịch vụ (Port Mapping)
 
-| Dịch vụ | Địa chỉ truy cập | Tài khoản / Mật khẩu |
-| :--- | :--- | :--- |
-| **Hệ thống Quản lý Sinh viên** | [http://localhost:3000](http://localhost:3000) | Truy cập trực tiếp |
-| **Cổng quản trị phpMyAdmin** | [http://localhost:8080](http://localhost:8080) | `student_user` / `SecurePass_2026@TKQTPM!` |
-| **Kiểm tra Healthcheck Web** | [http://localhost:3000/health](http://localhost:3000/health) | API JSON Status |
-| **Metrics Web App** | [http://localhost:3000/metrics](http://localhost:3000/metrics) | Prometheus Scrape Target |
+### 3.1. Các cổng công khai mở ra ngoài Host:
+
+| Dịch vụ | Cổng Host | Giao thức | Địa chỉ truy cập | Tài khoản / Ghi chú |
+| :--- | :---: | :---: | :--- | :--- |
+| **Nginx Reverse Proxy (HTTPS)** | **`443`** | HTTPS | [https://localhost](https://localhost) | Cổng truy cập chính bảo mật SSL tự ký & Security Headers |
+| **Nginx Reverse Proxy (HTTP)** | **`80`** | HTTP | [http://localhost](http://localhost) | Tự động chuyển hướng (HTTP 301 Redirect) sang HTTPS 443 |
+| **Hệ thống Quản lý Sinh viên** | **`3000`** | HTTP | [http://localhost:3000](http://localhost:3000) | Node.js Web App trực tiếp (hoặc qua HTTPS 443) |
+| **Cổng quản trị phpMyAdmin** | **`8080`** | HTTP | [http://localhost:8080](http://localhost:8080) | `student_user` / `SecurePass_2026@TKQTPM!` |
+| **Grafana Dashboard** | **`3001`** | HTTP | [http://localhost:3001](http://localhost:3001) | Biểu đồ giám sát CPU/RAM & truy vấn Loki LogQL (User: `admin` / `admin`) |
+| **Prometheus Server** | **`9090`** | HTTP | [http://localhost:9090](http://localhost:9090) | Bảng điều khiển thu thập Time-Series Metrics & Scrape Targets |
+| **Grafana Loki API** | **`3100`** | HTTP | [http://localhost:3100](http://localhost:3100) | Máy chủ thu nhận và lập chỉ mục Log tập trung |
+| **Healthcheck Web App** | **`3000`** | HTTP | [http://localhost:3000/health](http://localhost:3000/health) | API JSON kiểm tra trạng thái hoạt động ứng dụng |
+| **Metrics Web App** | **`3000`** | HTTP | [http://localhost:3000/metrics](http://localhost:3000/metrics) | Prometheus Scrape Target chỉ số HTTP traffic |
+
+### 3.2. Các cổng dịch vụ nội bộ (Network Isolation - Hardening):
+
+| Dịch vụ | Cổng Container | Mạng nội bộ | Mục đích sử dụng |
+| :--- | :---: | :--- | :--- |
+| **MySQL 8.0** | `3306` | `backend-net` | **Cô lập bảo mật:** Cổng CSDL chỉ giao tiếp trong mạng nội bộ, không mở ra Host để tránh tấn công brute-force. |
+| **cAdvisor** | `8080` | `monitoring-net` | Xuất metrics container (CPU, RAM, Network) cho Prometheus (`http://cadvisor:8080/metrics`). |
+| **Nginx Exporter** | `9113` | `monitoring-net` | Thu thập metrics Nginx stub_status cho Prometheus (`http://nginx-exporter:9113/metrics`). |
+| **MySQL Exporter** | `9104` | `backend-net`, `monitoring-net` | Thu thập chỉ số truy vấn MySQL cho Prometheus (`http://mysql-exporter:9104/metrics`). |
+| **Promtail** | `9080` | `logging-net` | Daemon đọc Docker logs và chuyển tiếp tới Loki qua cổng `3100`. |
 
 ---
 
